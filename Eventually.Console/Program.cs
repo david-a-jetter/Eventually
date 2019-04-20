@@ -1,27 +1,29 @@
 ﻿using Eventually.Core.Consumer;
 using Eventually.Core.Publisher;
 using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Reactive.Linq;
 
 namespace Eventually.ConsoleRunner
 {
-    class Program
+    static class Program
     {
         static void Main(string[] args)
         {
             var maxFields = 10000L;
-            var fieldGenerationInterval = TimeSpan.Zero;
+            var fieldGenerationInterval     = TimeSpan.Zero;
             var annotationRepublishInterval = TimeSpan.FromSeconds(1);
-            var fieldRepublishInterval = TimeSpan.FromSeconds(1);
+            var fieldRepublishInterval      = TimeSpan.FromSeconds(1);
 
-            var failOnAnnotateSave = 2L;
-            var failOnAnnotateAck = 2L;
-            var failOnAnnotate = 2L;
+            var failOnAnnotateSave = 10L;
+            var failOnAnnotateAck  = 10L;
+            var failOnAnnotate     = 10L;
 
             var fieldService = new FieldService(fieldGenerationInterval, maxFields, failOnAnnotateSave);
+
             using (var publisher = new PublisherService(fieldService))
-            using (var consumer = new AnnotationService(
+            using (var consumer  = new AnnotationService(
                 publisher.AnnotateField,
                 annotationRepublishInterval,
                 failOnAnnotateAck,
@@ -29,37 +31,42 @@ namespace Eventually.ConsoleRunner
             {
                 publisher.StartPublishing(consumer.Annotate, consumer.Acknowledge, fieldRepublishInterval);
 
-                var eventuallyConsistentObservation = 0L;
+                bool consistency = false;
 
-                Observable.Interval(TimeSpan.FromSeconds(1)).Subscribe(observationCount =>
-                {
-                    var fields = fieldService.Fields;
-                    var annotatedFields = fields.Where(field => field.ActiveAnnotation != null);
-                    var annotatedFieldCount = annotatedFields.Count();
-                    var annotations = consumer.Annotations;
+                var timer = new Stopwatch();
+                timer.Start();
 
-                    if (fields.Count == annotatedFieldCount && eventuallyConsistentObservation == 0L)
+                Observable
+                    .Interval(TimeSpan.FromSeconds(1))
+                    .TakeUntil(_ => consistency)
+                    .Subscribe(observationCount =>
                     {
-                        eventuallyConsistentObservation = observationCount;
-                    }
+                        var fields              = fieldService.Fields;
+                        var fieldCount          = fields.Count;
+                        var annotatedFieldCount = fields.Where(field => field.ActiveAnnotation != null).Count();
+                        var annotations         = consumer.Annotations;
 
-                    if (eventuallyConsistentObservation != 0L)
-                    {
-                        Console.WriteLine("-----------------------------");
-                        Console.WriteLine("Eventual Consistency Achieved!");
-                        Console.WriteLine($"Observations required: {eventuallyConsistentObservation}");
-                        Console.WriteLine("-----------------------------");
-                    }
-                    else
-                    {
-                        Console.WriteLine($"Observation:             {observationCount}");
-                        Console.WriteLine($"Field Count:             {fields.Count}");
+                        if (maxFields == annotatedFieldCount)
+                        {
+                            consistency = true;
+                        }
+                                                
+                        Console.WriteLine($"Execution Seconds:       {timer.Elapsed.Seconds}");
+                        Console.WriteLine($"Field Count:             {fieldCount}");
                         Console.WriteLine($"Annotated Field Count:   {annotatedFieldCount}");
                         Console.WriteLine($"Annotations Count:       {annotations.Count}");
-                        Console.WriteLine($"Unannotated Field Count: {fields.Count - annotatedFieldCount}");
+                        Console.WriteLine($"Unannotated Field Count: {fieldCount - annotatedFieldCount}");
                         Console.WriteLine();
-                    }
-                });
+
+                        if (consistency)
+                        {
+                            timer.Stop();
+
+                            Console.WriteLine("-----------------------------");
+                            Console.WriteLine("Eventual Consistency Achieved!");
+                            Console.WriteLine("-----------------------------");
+                        }
+                    });
 
                 Console.ReadKey();
             }
