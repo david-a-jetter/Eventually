@@ -15,6 +15,7 @@ namespace Eventually.Core.Publisher
         private readonly ConcurrentBag<FirstClassField> _Fields;
 
         private readonly long _MaxFieldCount;
+        private readonly long _FailOnEvery;
 
         private readonly IDisposable _FieldGenerationSubscription;
 
@@ -25,7 +26,7 @@ namespace Eventually.Core.Publisher
             new ReadOnlyCollection<FirstClassField>(_Fields.ToList());
 
         //Responsible for generating and holding field data
-        public FieldService(TimeSpan generationInterval, long maxFieldCount)
+        public FieldService(TimeSpan generationInterval, long maxFieldCount, long failOnEvery)
         {
             _Fields = new ConcurrentBag<FirstClassField>
             {
@@ -33,6 +34,7 @@ namespace Eventually.Core.Publisher
             };
 
             _MaxFieldCount = maxFieldCount;
+            _FailOnEvery = failOnEvery;
 
             _FieldGenerationSubscription = GenerateFields(generationInterval);
         }
@@ -41,7 +43,7 @@ namespace Eventually.Core.Publisher
         public async Task<bool> AnnotateField(long fieldId, Annotation annotation)
         {
             //This is just a cheap way to simulate a rate of failure
-            var willSucceed = (Interlocked.Increment(ref _InterlockRef) % 4L) != 0;
+            var willSucceed = (Interlocked.Increment(ref _InterlockRef) % _FailOnEvery) != 0;
 
             if (willSucceed)
             {

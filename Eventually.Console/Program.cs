@@ -15,9 +15,17 @@ namespace Eventually.ConsoleRunner
             var annotationRepublishInterval = TimeSpan.FromSeconds(1);
             var fieldRepublishInterval = TimeSpan.FromSeconds(1);
 
-            var fieldService = new FieldService(fieldGenerationInterval, maxFields);
+            var failOnAnnotateSave = 2L;
+            var failOnAnnotateAck = 2L;
+            var failOnAnnotate = 2L;
+
+            var fieldService = new FieldService(fieldGenerationInterval, maxFields, failOnAnnotateSave);
             using (var publisher = new PublisherService(fieldService))
-            using (var consumer = new AnnotationService(publisher.AnnotateField, annotationRepublishInterval))
+            using (var consumer = new AnnotationService(
+                publisher.AnnotateField,
+                annotationRepublishInterval,
+                failOnAnnotateAck,
+                failOnAnnotate))
             {
                 publisher.StartPublishing(consumer.Annotate, consumer.Acknowledge, fieldRepublishInterval);
 

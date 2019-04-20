@@ -18,6 +18,9 @@ namespace Eventually.Core.Consumer
         private long _AnnotateRef;
         private long _IdRef;
 
+        private readonly long _FailAckOnEvery;
+        private readonly long _FailAnnotateOnEvery;
+
         private ConcurrentDictionary<long, ConcurrentBag<AckableAnnotation>> _Annotations { get; }
 
         private IDisposable _RepublishSubscription { get; }
@@ -30,11 +33,16 @@ namespace Eventually.Core.Consumer
 
         public AnnotationService(
             Func<long, Annotation, Task> annotateFunc,
-            TimeSpan republishInterval)
+            TimeSpan republishInterval,
+            long failAckOnEvery,
+            long failAnnotateOnEvery)
         {
             _PublishAnnotationFunc = annotateFunc ?? throw new ArgumentNullException(nameof(annotateFunc));
 
             _Annotations = new ConcurrentDictionary<long, ConcurrentBag<AckableAnnotation>>();
+
+            _FailAckOnEvery = failAckOnEvery;
+            _FailAnnotateOnEvery = failAnnotateOnEvery;
 
             _RepublishSubscription = RepublishAnnotations(republishInterval);
         }
@@ -42,7 +50,8 @@ namespace Eventually.Core.Consumer
         //Store an acknowledgement for an annotation if we can find it
         public async Task Acknowledge(long fieldId, Annotation annotation)
         {
-            var willSucceed = (Interlocked.Increment(ref _AckRef) % 4L) != 0;
+            //This is just a cheap way to simulate a rate of failure
+            var willSucceed = (Interlocked.Increment(ref _AckRef) % _FailAckOnEvery) != 0;
 
             if (willSucceed)
             {
@@ -63,7 +72,7 @@ namespace Eventually.Core.Consumer
         public async Task Annotate(FirstClassField field)
         {
             //This is just a cheap way to simulate a rate of failure
-            var willSucceed = (Interlocked.Increment(ref _AnnotateRef) % 4L) != 0;
+            var willSucceed = (Interlocked.Increment(ref _AnnotateRef) % _FailAnnotateOnEvery) != 0;
 
             if (willSucceed)
             {
