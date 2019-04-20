@@ -29,6 +29,8 @@ namespace Eventually.ConsoleRunner
             {
                 publisher.StartPublishing(consumer.Annotate, consumer.Acknowledge, fieldRepublishInterval);
 
+                var eventuallyConsistentObservation = 0L;
+
                 Observable.Interval(TimeSpan.FromSeconds(1)).Subscribe(observationCount =>
                 {
                     var fields = fieldService.Fields;
@@ -36,12 +38,27 @@ namespace Eventually.ConsoleRunner
                     var annotatedFieldCount = annotatedFields.Count();
                     var annotations = consumer.Annotations;
 
-                    Console.WriteLine($"Observation:             {observationCount}");
-                    Console.WriteLine($"Field Count:             {fields.Count}");
-                    Console.WriteLine($"Annotated Field Count:   {annotatedFieldCount}");
-                    Console.WriteLine($"Annotations Count:       {annotations.Count}");
-                    Console.WriteLine($"Unannotated Field Count: {fields.Count - annotatedFieldCount}");
-                    Console.WriteLine();
+                    if (fields.Count == annotatedFieldCount && eventuallyConsistentObservation == 0L)
+                    {
+                        eventuallyConsistentObservation = observationCount;
+                    }
+
+                    if (eventuallyConsistentObservation != 0L)
+                    {
+                        Console.WriteLine("-----------------------------");
+                        Console.WriteLine("Eventual Consistency Achieved!");
+                        Console.WriteLine($"Observations required: {eventuallyConsistentObservation}");
+                        Console.WriteLine("-----------------------------");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Observation:             {observationCount}");
+                        Console.WriteLine($"Field Count:             {fields.Count}");
+                        Console.WriteLine($"Annotated Field Count:   {annotatedFieldCount}");
+                        Console.WriteLine($"Annotations Count:       {annotations.Count}");
+                        Console.WriteLine($"Unannotated Field Count: {fields.Count - annotatedFieldCount}");
+                        Console.WriteLine();
+                    }
                 });
 
                 Console.ReadKey();
