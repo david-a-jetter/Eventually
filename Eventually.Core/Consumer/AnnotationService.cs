@@ -14,7 +14,8 @@ namespace Eventually.Core.Consumer
 {
     public class AnnotationService : IAnnotationService, IDisposable
     {
-        private long _InterlockRef;
+        private long _AckRef;
+        private long _AnnotateRef;
         private long _IdRef;
 
         private ConcurrentDictionary<long, ConcurrentBag<AckableAnnotation>> _Annotations { get; }
@@ -41,14 +42,19 @@ namespace Eventually.Core.Consumer
         //Store an acknowledgement for an annotation if we can find it
         public async Task Acknowledge(long fieldId, Annotation annotation)
         {
-            if (_Annotations.TryGetValue(fieldId, out var ackables))
-            {
-                var annotationToAck = ackables.FirstOrDefault(ackable =>
-                    ackable.Annotation.Id == annotation.Id);
+            var willSucceed = (Interlocked.Increment(ref _AckRef) % 4L) != 0;
 
-                if (annotationToAck != null)
+            if (willSucceed)
+            {
+                if (_Annotations.TryGetValue(fieldId, out var ackables))
                 {
-                    annotationToAck.Acked = true;
+                    var annotationToAck = ackables.FirstOrDefault(ackable =>
+                        ackable.Annotation.Id == annotation.Id);
+
+                    if (annotationToAck != null)
+                    {
+                        annotationToAck.Acked = true;
+                    }
                 }
             }
         }
@@ -57,7 +63,7 @@ namespace Eventually.Core.Consumer
         public async Task Annotate(FirstClassField field)
         {
             //This is just a cheap way to simulate a rate of failure
-            var willSucceed = (Interlocked.Increment(ref _InterlockRef) % 2L) == 0;
+            var willSucceed = (Interlocked.Increment(ref _AnnotateRef) % 4L) != 0;
 
             if (willSucceed)
             {
@@ -73,12 +79,25 @@ namespace Eventually.Core.Consumer
                     _Annotations.TryAdd(field.Id, ackables);
                 }
 
-                var annotation = new Annotation(Interlocked.Increment(ref _IdRef), "ANNOTATION!");
+                Annotation annotation;
 
-                ackables.Add(new AckableAnnotation(annotation));
+                if (! ackables.Any())
+                {
+                    annotation = new Annotation(Interlocked.Increment(ref _IdRef), "ANNOTATION!");
+
+                    ackables.Add(new AckableAnnotation(annotation));
+                }
+                else
+                {
+                    annotation = ackables.OrderByDescending(ack => ack.Annotation.Id).First().Annotation;
+                }
 
                 //Fire and forget publish
                 _PublishAnnotationFunc(field.Id, annotation);
+            }
+            else
+            {
+                //Failure
             }
         }
 

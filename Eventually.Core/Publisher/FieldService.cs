@@ -41,7 +41,7 @@ namespace Eventually.Core.Publisher
         public async Task<bool> AnnotateField(long fieldId, Annotation annotation)
         {
             //This is just a cheap way to simulate a rate of failure
-            var willSucceed = (Interlocked.Increment(ref _InterlockRef) % 2L) == 0;
+            var willSucceed = (Interlocked.Increment(ref _InterlockRef) % 4L) != 0;
 
             if (willSucceed)
             {

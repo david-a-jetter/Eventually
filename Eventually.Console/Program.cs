@@ -4,16 +4,16 @@ using System;
 using System.Linq;
 using System.Reactive.Linq;
 
-namespace Eventually.Console
+namespace Eventually.ConsoleRunner
 {
     class Program
     {
         static void Main(string[] args)
         {
-            var maxFields = 1000L;
-            var fieldGenerationInterval = TimeSpan.FromMilliseconds(1);
-            var annotationRepublishInterval = TimeSpan.FromSeconds(2);
-            var fieldRepublishInterval = TimeSpan.FromSeconds(2);
+            var maxFields = 10000L;
+            var fieldGenerationInterval = TimeSpan.Zero;
+            var annotationRepublishInterval = TimeSpan.FromSeconds(1);
+            var fieldRepublishInterval = TimeSpan.FromSeconds(1);
 
             var fieldService = new FieldService(fieldGenerationInterval, maxFields);
             using (var publisher = new PublisherService(fieldService))
@@ -28,15 +28,15 @@ namespace Eventually.Console
                     var annotatedFieldCount = annotatedFields.Count();
                     var annotations = consumer.Annotations;
 
-                    System.Console.WriteLine($"Observation: {observationCount}");
-                    System.Console.WriteLine($"Field Count: {fields.Count}");
-                    System.Console.WriteLine($"Annotated Field Count: {annotatedFieldCount}");
-                    System.Console.WriteLine($"Unannotated Field Count: {fields.Count - annotatedFieldCount}");
-                    System.Console.WriteLine($"Annotations Count: {annotations.Count}");
-                    System.Console.WriteLine();
+                    Console.WriteLine($"Observation:             {observationCount}");
+                    Console.WriteLine($"Field Count:             {fields.Count}");
+                    Console.WriteLine($"Annotated Field Count:   {annotatedFieldCount}");
+                    Console.WriteLine($"Annotations Count:       {annotations.Count}");
+                    Console.WriteLine($"Unannotated Field Count: {fields.Count - annotatedFieldCount}");
+                    Console.WriteLine();
                 });
 
-                System.Console.ReadKey();
+                Console.ReadKey();
             }
         }
     }
