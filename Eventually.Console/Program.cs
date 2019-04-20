@@ -10,7 +10,7 @@ namespace Eventually.Console
     {
         static void Main(string[] args)
         {
-            var maxFields = 10000L;
+            var maxFields = 100L;
             var fieldGenerationInterval = TimeSpan.FromMilliseconds(1);
             var annotationRepublishInterval = TimeSpan.FromSeconds(5);
             var fieldRepublishInterval = TimeSpan.FromSeconds(5);

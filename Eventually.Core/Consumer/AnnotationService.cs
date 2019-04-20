@@ -36,9 +36,10 @@ namespace Eventually.Core.Consumer
 
             _Annotations = new ConcurrentDictionary<long, ConcurrentBag<AckableAnnotation>>();
 
-            _RepublishSubscription = RepublishFields(republishInterval);
+            _RepublishSubscription = RepublishAnnotations(republishInterval);
         }
 
+        //Store an acknowledgement for an annotation if we can find it
         public async Task Acknowledge(long fieldId, Annotation annotation)
         {
             if (_Annotations.TryGetValue(fieldId, out var ackables))
@@ -53,21 +54,19 @@ namespace Eventually.Core.Consumer
             }
         }
 
+        //Generate and store an annotation for a field
         public async Task Annotate(FirstClassField field)
         {
             ConcurrentBag<AckableAnnotation> ackables;
 
-            lock(_Lock)
+            if (_Annotations.TryGetValue(field.Id, out var fieldAckables))
             {
-                if (_Annotations.TryGetValue(field.Id, out var fieldAckables))
-                {
-                    ackables = fieldAckables;
-                }
-                else
-                {
-                    ackables = new ConcurrentBag<AckableAnnotation>();
-                    _Annotations.TryAdd(field.Id, ackables);
-                }
+                ackables = fieldAckables;
+            }
+            else
+            {
+                ackables = new ConcurrentBag<AckableAnnotation>();
+                _Annotations.TryAdd(field.Id, ackables);
             }
 
             ackables.Add(
@@ -77,7 +76,8 @@ namespace Eventually.Core.Consumer
                         "ANNOTATION!")));
         }
 
-        private IDisposable RepublishFields(TimeSpan interval)
+        //Continually republish any annotation that is not yet acked
+        private IDisposable RepublishAnnotations(TimeSpan interval)
         {
             var subscription = Observable
                 .Interval(interval)

@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reactive.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Eventually.Core.Publisher
@@ -13,15 +12,18 @@ namespace Eventually.Core.Publisher
     public class FieldService : IFieldService, IDisposable
     {
         private readonly ConcurrentBag<FirstClassField> _Fields;
+
         private readonly long _MaxFieldCount;
 
-        private IDisposable _FieldGenerationSubscription;
+        private readonly IDisposable _FieldGenerationSubscription;
 
         //Simple ~50% error rate simulation
         private volatile bool _AnnotateSucceed;
 
-        public IReadOnlyCollection<FirstClassField> Fields => new ReadOnlyCollection<FirstClassField>(_Fields.ToList());
+        public IReadOnlyCollection<FirstClassField> Fields => 
+            new ReadOnlyCollection<FirstClassField>(_Fields.ToList());
 
+        //Responsible for generating and holding field data
         public FieldService(TimeSpan generationInterval, long maxFieldCount)
         {
             _Fields = new ConcurrentBag<FirstClassField>
@@ -34,8 +36,11 @@ namespace Eventually.Core.Publisher
             _FieldGenerationSubscription = GenerateFields(generationInterval);
         }
 
+        //Annotate a FirstClassField with a simulated rate of failure
         public async Task<bool> AnnotateField(long fieldId, Annotation annotation)
         {
+            //This is just a cheap way to simulate a rate of failure
+            await Task.Delay(1);
             var willSucceed = _AnnotateSucceed;
 
             if (willSucceed)
@@ -57,6 +62,7 @@ namespace Eventually.Core.Publisher
             return willSucceed;
         }
 
+        //Retrieve all FirstClassFields that are not currently annotated
         public async Task<IReadOnlyCollection<FirstClassField>> GetUnannotatedFields()
         {
             var fields = _Fields.Where(field => field.ActiveAnnotation is null).ToList();
@@ -64,6 +70,7 @@ namespace Eventually.Core.Publisher
             return new ReadOnlyCollection<FirstClassField>(fields);
         }
 
+        //Continually generate new fields to simulate data entry
         private IDisposable GenerateFields(TimeSpan interval)
         {
             var subscription = Observable

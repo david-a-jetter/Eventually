@@ -18,6 +18,7 @@ namespace Eventually.Core.Publisher
             _FieldService = fieldService ?? throw new ArgumentNullException(nameof(fieldService));
         }
 
+        //Initiate publication of unannotated fields to what we hope is an annotation service
         public void StartPublishing(
             Func<FirstClassField, Task> publishFunc,
             Func<long, Annotation, Task> ackFunc,
@@ -29,12 +30,13 @@ namespace Eventually.Core.Publisher
             _RepublishSubscription = RepublishFields(republishInterval);
         }
 
+        //Acknowledge successful annotations
         public async Task AnnotateField(long fieldId, Annotation annotation)
         {
             if (await _FieldService.AnnotateField(fieldId, annotation))
             {
                 //Fire and forget ack
-                _AckFunc(fieldId, annotation);
+                _AckFunc?.Invoke(fieldId, annotation);
             }
         }
 
