@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reactive.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Eventually.Core.Publisher
@@ -18,7 +19,7 @@ namespace Eventually.Core.Publisher
         private readonly IDisposable _FieldGenerationSubscription;
 
         //Simple ~50% error rate simulation
-        private volatile bool _AnnotateSucceed;
+        private long _InterlockRef;
 
         public IReadOnlyCollection<FirstClassField> Fields => 
             new ReadOnlyCollection<FirstClassField>(_Fields.ToList());
@@ -40,13 +41,10 @@ namespace Eventually.Core.Publisher
         public async Task<bool> AnnotateField(long fieldId, Annotation annotation)
         {
             //This is just a cheap way to simulate a rate of failure
-            await Task.Delay(1);
-            var willSucceed = _AnnotateSucceed;
+            var willSucceed = (Interlocked.Increment(ref _InterlockRef) % 2L) == 0;
 
             if (willSucceed)
             {
-                _AnnotateSucceed = false;
-
                 var field = _Fields.FirstOrDefault(x => x.Id == fieldId);
 
                 if (field != null)
@@ -56,7 +54,7 @@ namespace Eventually.Core.Publisher
             }
             else
             {
-                _AnnotateSucceed = true;
+
             }
 
             return willSucceed;

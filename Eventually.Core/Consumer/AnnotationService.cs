@@ -14,7 +14,7 @@ namespace Eventually.Core.Consumer
 {
     public class AnnotationService : IAnnotationService, IDisposable
     {
-        private readonly object _Lock;
+        private long _InterlockRef;
         private long _IdRef;
 
         private ConcurrentDictionary<long, ConcurrentBag<AckableAnnotation>> _Annotations { get; }
@@ -32,7 +32,6 @@ namespace Eventually.Core.Consumer
             TimeSpan republishInterval)
         {
             _PublishAnnotationFunc = annotateFunc ?? throw new ArgumentNullException(nameof(annotateFunc));
-            _Lock = new object();
 
             _Annotations = new ConcurrentDictionary<long, ConcurrentBag<AckableAnnotation>>();
 
@@ -57,23 +56,30 @@ namespace Eventually.Core.Consumer
         //Generate and store an annotation for a field
         public async Task Annotate(FirstClassField field)
         {
-            ConcurrentBag<AckableAnnotation> ackables;
+            //This is just a cheap way to simulate a rate of failure
+            var willSucceed = (Interlocked.Increment(ref _InterlockRef) % 2L) == 0;
 
-            if (_Annotations.TryGetValue(field.Id, out var fieldAckables))
+            if (willSucceed)
             {
-                ackables = fieldAckables;
-            }
-            else
-            {
-                ackables = new ConcurrentBag<AckableAnnotation>();
-                _Annotations.TryAdd(field.Id, ackables);
-            }
+                ConcurrentBag<AckableAnnotation> ackables;
 
-            ackables.Add(
-                new AckableAnnotation(
-                    new Annotation(
-                        Interlocked.Increment(ref _IdRef),
-                        "ANNOTATION!")));
+                if (_Annotations.TryGetValue(field.Id, out var fieldAckables))
+                {
+                    ackables = fieldAckables;
+                }
+                else
+                {
+                    ackables = new ConcurrentBag<AckableAnnotation>();
+                    _Annotations.TryAdd(field.Id, ackables);
+                }
+
+                var annotation = new Annotation(Interlocked.Increment(ref _IdRef), "ANNOTATION!");
+
+                ackables.Add(new AckableAnnotation(annotation));
+
+                //Fire and forget publish
+                _PublishAnnotationFunc(field.Id, annotation);
+            }
         }
 
         //Continually republish any annotation that is not yet acked
