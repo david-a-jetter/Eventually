@@ -4,6 +4,7 @@ using System;
 using System.Diagnostics;
 using System.Linq;
 using System.Reactive.Linq;
+using System.Threading;
 
 namespace Eventually.ConsoleRunner
 {
@@ -16,9 +17,9 @@ namespace Eventually.ConsoleRunner
             var annotationRepublishInterval = TimeSpan.FromSeconds(1);
             var fieldRepublishInterval      = TimeSpan.FromSeconds(1);
 
-            var failOnAnnotateSave = 2L;
-            var failOnAnnotateAck  = 2L;
-            var failOnAnnotate     = 2L;
+            var failOnAnnotateSave = 20L;
+            var failOnAnnotateAck  = 20L;
+            var failOnAnnotate     = 20L;
 
             var fieldService = new FieldService(fieldGenerationInterval, maxFields, failOnAnnotateSave);
 
@@ -39,7 +40,7 @@ namespace Eventually.ConsoleRunner
                 Observable
                     .Interval(TimeSpan.FromSeconds(1))
                     .TakeUntil(_ => consistency)
-                    .Subscribe(observationCount =>
+                    .Subscribe(_ =>
                     {
                         var fields              = fieldService.Fields;
                         var fieldCount          = fields.Count;
@@ -51,7 +52,7 @@ namespace Eventually.ConsoleRunner
                             consistency = true;
                         }
                                                 
-                        Console.WriteLine($"Execution Seconds:       {timer.Elapsed.Seconds}");
+                        Console.WriteLine($"Execution Seconds:       {timer.Elapsed.TotalSeconds}");
                         Console.WriteLine($"Field Count:             {fieldCount}");
                         Console.WriteLine($"Annotated Field Count:   {annotatedFieldCount}");
                         Console.WriteLine($"Annotations Count:       {annotations.Count}");
@@ -62,9 +63,9 @@ namespace Eventually.ConsoleRunner
                         {
                             timer.Stop();
 
-                            Console.WriteLine("-----------------------------");
+                            Console.WriteLine("------------------------------");
                             Console.WriteLine("Eventual Consistency Achieved!");
-                            Console.WriteLine("-----------------------------");
+                            Console.WriteLine("------------------------------");
                         }
                     });
 
