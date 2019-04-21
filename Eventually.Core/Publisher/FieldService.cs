@@ -19,14 +19,16 @@ namespace Eventually.Core.Publisher
 
         private readonly IDisposable _FieldGenerationSubscription;
 
-        //Simple ~50% error rate simulation
         private long _InterlockRef;
 
         public IReadOnlyCollection<FirstClassField> Fields => 
             new ReadOnlyCollection<FirstClassField>(_Fields.ToList());
 
         //Responsible for generating and holding field data
-        public FieldService(TimeSpan generationInterval, long maxFieldCount, long failOnEvery)
+        public FieldService(
+            TimeSpan generationInterval,
+            long maxFieldCount,
+            long failOnEvery)
         {
             _Fields = new ConcurrentBag<FirstClassField>
             {

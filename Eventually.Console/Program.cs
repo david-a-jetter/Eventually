@@ -17,9 +17,9 @@ namespace Eventually.ConsoleRunner
             var annotationRepublishInterval = TimeSpan.FromSeconds(1);
             var fieldRepublishInterval      = TimeSpan.FromSeconds(1);
 
-            var failOnAnnotateSave = 20L;
-            var failOnAnnotateAck  = 20L;
-            var failOnAnnotate     = 20L;
+            var failOnAnnotateSave = 2L;
+            var failOnAnnotateAck  = 2L;
+            var failOnAnnotate     = 2L;
 
             var fieldService = new FieldService(fieldGenerationInterval, maxFields, failOnAnnotateSave);
 
@@ -52,7 +52,7 @@ namespace Eventually.ConsoleRunner
                             consistency = true;
                         }
                                                 
-                        Console.WriteLine($"Execution Seconds:       {timer.Elapsed.TotalSeconds}");
+                        Console.WriteLine($"Execution Seconds:       {timer.Elapsed.TotalSeconds.ToString("#")}");
                         Console.WriteLine($"Field Count:             {fieldCount}");
                         Console.WriteLine($"Annotated Field Count:   {annotatedFieldCount}");
                         Console.WriteLine($"Annotations Count:       {annotations.Count}");
