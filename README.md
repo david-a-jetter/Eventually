@@ -16,6 +16,6 @@ The business goal is to **confidently** annotate all fields in the data entry se
 2. No need to assume or even attempt to produce a *perfect* messaging technology
 3. A business-state based reconciliation between two systems that adheres to principles limited coupling
 
-The model produces an eventually consistent result with a mathematical reliability within a certain range of tolerance. I haven't yet bothered to define the formula for that, but I am absolutely confident that it exists. Some of the timing and rates of state change grows unpredictable due to the number of concurrent Tasks and the program's inability to run as an actual distributed system. But, this is good enough for a demonstration of the principles.
+The model produces an eventually consistent result with a mathematical reliability within a certain range of tolerance. I haven't yet bothered to define the formula for that, but I am absolutely confident that it exists. Some of the timing and rates of state change grow unpredictable due to the number of concurrent Tasks and the program's inability to run as an actual distributed system. But, this is good enough for a demonstration of the principles.
 
 ![Eventually Consistent Flow](./doc/Eventually.svg "Eventually Consistent Flow")
