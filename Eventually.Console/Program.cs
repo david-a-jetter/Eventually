@@ -17,20 +17,23 @@ namespace Eventually.ConsoleRunner
             var annotationRepublishInterval = TimeSpan.FromSeconds(1);
             var fieldRepublishInterval      = TimeSpan.FromSeconds(1);
 
-            var failOnAnnotateSave = 2L;
-            var failOnAnnotateAck  = 2L;
-            var failOnAnnotate     = 2L;
+            var failOnAnnotateSaveOnEvery = 2;
+            var failOnAnnotateAckOnEvery  = 2;
+            var failOnAnnotateOnEvery     = 2;
 
-            var fieldService = new FieldService(fieldGenerationInterval, maxFields, failOnAnnotateSave);
+            var fieldService = new FieldService(fieldGenerationInterval, maxFields, failOnAnnotateSaveOnEvery);
 
-            using (var publisher = new PublisherService(fieldService))
-            using (var consumer  = new AnnotationService(
-                publisher.AnnotateField,
+            using (var dataEntryService  = new DataEntryService(fieldService))
+            using (var annotationService = new AnnotationService(
+                dataEntryService.AnnotateField,
                 annotationRepublishInterval,
-                failOnAnnotateAck,
-                failOnAnnotate))
+                failOnAnnotateAckOnEvery,
+                failOnAnnotateOnEvery))
             {
-                publisher.StartPublishing(consumer.Annotate, consumer.Acknowledge, fieldRepublishInterval);
+                dataEntryService.StartPublishing(
+                    annotationService.Annotate,
+                    annotationService.Acknowledge,
+                    fieldRepublishInterval);
 
                 bool consistency = false;
 
@@ -45,9 +48,9 @@ namespace Eventually.ConsoleRunner
                         var fields              = fieldService.Fields;
                         var fieldCount          = fields.Count;
                         var annotatedFieldCount = fields.Where(field => field.ActiveAnnotation != null).Count();
-                        var annotations         = consumer.Annotations;
+                        var annotations         = annotationService.Annotations;
 
-                        if (maxFields == annotatedFieldCount)
+                        if (fieldCount == annotatedFieldCount)
                         {
                             consistency = true;
                         }

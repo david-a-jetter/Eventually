@@ -44,7 +44,8 @@ namespace Eventually.Core.Publisher
         //Annotate a FirstClassField with a simulated rate of failure
         public async Task<bool> AnnotateField(long fieldId, Annotation annotation)
         {
-            //This is just a cheap way to simulate a rate of failure
+            //This is just a cheap way to simulate a rate of failure.
+            //Interlocked.Increment is a thread-safe, atomic increment
             var willSucceed = (Interlocked.Increment(ref _InterlockRef) % _FailOnEvery) != 0;
 
             if (willSucceed)
@@ -55,10 +56,6 @@ namespace Eventually.Core.Publisher
                 {
                     field.Annotate(annotation);
                 }
-            }
-            else
-            {
-
             }
 
             return willSucceed;
@@ -75,15 +72,12 @@ namespace Eventually.Core.Publisher
         //Continually generate new fields to simulate data entry
         private IDisposable GenerateFields(TimeSpan interval)
         {
+            //Continuosly execute the specified anonymous method on the specified interval, without blocking.
+            //Stop executing once the number of iterations has reached the specified maximum count
             var subscription = Observable
                 .Interval(interval)
-                .Subscribe(id =>
-                {
-                    if(_Fields.Count < _MaxFieldCount)
-                    {
-                        _Fields.Add(new FirstClassField(id));
-                    }
-                });
+                .TakeUntil(_  => _Fields.Count == _MaxFieldCount)
+                .Subscribe(id => _Fields.Add(new FirstClassField(id)));
 
             return subscription;
         }

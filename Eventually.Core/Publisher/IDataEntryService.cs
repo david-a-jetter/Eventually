@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace Eventually.Core.Publisher
 {
-    interface IPublisherService
+    interface IDataEntryService
     {
         Task AnnotateField(long fieldId, Annotation annotation);
     }

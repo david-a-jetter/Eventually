@@ -5,15 +5,16 @@ using System.Threading.Tasks;
 
 namespace Eventually.Core.Publisher
 {
-    public class PublisherService : IPublisherService, IDisposable
+    public class DataEntryService : IDataEntryService, IDisposable
     {
         private IDisposable _RepublishSubscription;
 
-        private IFieldService _FieldService { get; }
+        private readonly IFieldService _FieldService;
+
         private Func<FirstClassField, Task> _PublishFunc;
         private Func<long, Annotation, Task> _AckFunc;
 
-        public PublisherService(IFieldService fieldService)
+        public DataEntryService(IFieldService fieldService)
         {
             _FieldService = fieldService ?? throw new ArgumentNullException(nameof(fieldService));
         }
@@ -42,6 +43,7 @@ namespace Eventually.Core.Publisher
 
         private IDisposable RepublishFields(TimeSpan interval)
         {
+            //Continuosly execute the specified anonymous method on the specified interval, without blocking.
             var subscription = Observable
                 .Interval(interval)
                 .Subscribe(async _ =>

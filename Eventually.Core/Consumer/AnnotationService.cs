@@ -51,6 +51,7 @@ namespace Eventually.Core.Consumer
         public async Task Acknowledge(long fieldId, Annotation annotation)
         {
             //This is just a cheap way to simulate a rate of failure
+            //Interlocked.Increment is a thread-safe, atomic increment
             var willSucceed = (Interlocked.Increment(ref _AckRef) % _FailAckOnEvery) != 0;
 
             if (willSucceed)
@@ -72,6 +73,7 @@ namespace Eventually.Core.Consumer
         public async Task Annotate(FirstClassField field)
         {
             //This is just a cheap way to simulate a rate of failure
+            //Interlocked.Increment is a thread-safe, atomic increment
             var willSucceed = (Interlocked.Increment(ref _AnnotateRef) % _FailAnnotateOnEvery) != 0;
 
             if (willSucceed)
@@ -92,7 +94,9 @@ namespace Eventually.Core.Consumer
 
                 if (! ackables.Any())
                 {
-                    annotation = new Annotation(Interlocked.Increment(ref _IdRef), "ANNOTATION!");
+                    //Same Interlocked type reference, but this is really just an ID incrementer, not a failure simulation
+                    //This is meant to simulate something like a DB Primary Key sequence
+                    annotation = new Annotation(Interlocked.Increment(ref _IdRef), "ANNOTATION! :)");
 
                     ackables.Add(new AckableAnnotation(annotation));
                 }
