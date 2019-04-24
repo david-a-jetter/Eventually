@@ -26,7 +26,7 @@ Starting from the Program.cs file in the Eventually.Console project, the code se
 
 * An instance of FieldService, not in a using block for automatic disposal, since it is injected into the DataEntryService. FieldService responsibilities are:
   * Generate new instances of FirstClassField type every specified TimeSpan and up to a specified maximum count
-  * Expose non-annotated fields as a ReadOnlyCollection in in its GetUnannotatedFields method
+  * Expose non-annotated fields as a ReadOnlyCollection in its GetUnannotatedFields method
   * Save Annotations to specified field Ids, with a specified rate of failure using Interlock.Increment and a divisor
     * Interlock.Increment provides a thread-safe, atomic incrementer. Combined with the divisor/remainder pattern, should provide an accurate rate of failure every X iteration
 
