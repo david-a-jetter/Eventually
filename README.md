@@ -20,6 +20,15 @@ The business goal is to **confidently** annotate all fields in the data entry se
 
 The model produces an eventually consistent result with a mathematical reliability within a certain range of tolerance. I haven't yet bothered to define the formula for that, but I am absolutely confident that it exists. Some of the timing and rates of state change grow unpredictable due to the number of concurrent Tasks and the program's inability to run as an actual distributed system. But, this is good enough for a demonstration of the principles.
 
+## Execution
+The only external dependency this project has is the .NET Core SDK 2.2. SDKs can be installed from: https://dotnet.microsoft.com/download
+
+Once installed, open a terminal or command prompt in the base directory and execute the following:
+
+`dotnet run --project .\Eventually.Console\Eventually.Console.csproj`
+
+Slash directions may need to be reversed on non-Windows systems.
+
 ## Technical Flow
 
 Starting from the Program.cs file in the Eventually.Console project, the code setups of the following in sequence:
